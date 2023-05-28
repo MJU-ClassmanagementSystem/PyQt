@@ -1,60 +1,32 @@
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QLabel
+from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtGui import QImage, QPixmap
 import os
 import cv2
 import dlib
 import numpy as np
-from PyQt5.QtWidgets import (
-    QApplication,
-    QWidget,
-    QVBoxLayout,
-    QPushButton,
-    QLabel,
-    QTableWidget,
-    QTableWidgetItem,
-    QLineEdit,
-)
-from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal
+from video_thread import VideoThread
 
-# dlib face detector
 face_detector = dlib.get_frontal_face_detector()
-# dlib face recognition model
-face_recognition_model = dlib.face_recognition_model_v1(
-    "dlib_face_recognition_resnet_model_v1.dat"
-)
-# dlib face landmark detector
+face_recognition_model = dlib.face_recognition_model_v1("dlib_face_recognition_resnet_model_v1.dat")
 landmark_detector = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 
-
-class VideoThread(QThread):
-    change_pixmap_signal = pyqtSignal(np.ndarray)
-
-    def __init__(self, parent=None):
-        super(VideoThread, self).__init__(parent)
-        self.cap = cv2.VideoCapture(0)
-
-    def run(self):
-        while True:
-            ret, cv_img = self.cap.read()
-            if ret:
-                self.change_pixmap_signal.emit(cv_img)
-            else:
-                print("Unable to access the camera.")
-
-
 class Attendance(QWidget):
-    def __init__(self):
+    def __init__(self, main_menu):
         super().__init__()
-
         self.title = "Attendance"
         self.known_embeddings = []
         self.known_labels = []
+        self.main_menu = main_menu
         self.initUI()
         self.load_known_faces()
+        self.th = VideoThread(self)
+        self.th.change_pixmap_signal.connect(self.update_image)
+        self.th.start()
 
     def initUI(self):
         self.setWindowTitle(self.title)
 
-        # video
         self.image_label = QLabel(self)
         self.image_label.resize(640, 480)
 
@@ -63,21 +35,25 @@ class Attendance(QWidget):
         self.attendance_table.setHorizontalHeaderLabels(["Name", "Attendance"])
         self.update_button = QPushButton("Update", self)
         self.update_button.clicked.connect(self.update_attendance)
+        self.main_menu_button = QPushButton("Main Menu", self)
+        self.main_menu_button.clicked.connect(self.go_to_main_menu)
 
         layout = QVBoxLayout()
         layout.addWidget(self.image_label)
         layout.addWidget(self.attendance_table)
         layout.addWidget(self.update_button)
+        layout.addWidget(self.main_menu_button)
+
 
         self.setLayout(layout)
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_attendance)
-        self.timer.start(1000)  # 1초마다 업데이트
-
-        self.th = VideoThread(self)
-        self.th.change_pixmap_signal.connect(self.update_image)
-        self.th.start()
+        self.timer.start(10000)
+        
+    def go_to_main_menu(self):
+        self.close()
+        self.main_menu.show()
 
     def load_known_faces(self):
         self.known_embeddings = []
@@ -102,12 +78,8 @@ class Attendance(QWidget):
             faces = face_detector(dlib_frame)
             for face in faces:
                 landmarks = landmark_detector(dlib_frame, face)
-                unknown_embedding = face_recognition_model.compute_face_descriptor(
-                    dlib_frame, landmarks
-                )
-                unknown_embedding = np.array(
-                    unknown_embedding
-                )  # Convert dlib vector to numpy array
+                unknown_embedding = face_recognition_model.compute_face_descriptor(dlib_frame, landmarks)
+                unknown_embedding = np.array(unknown_embedding)
 
                 min_distance = 1.0
                 min_distance_index = -1
@@ -118,9 +90,7 @@ class Attendance(QWidget):
                         min_distance_index = i
 
                 if min_distance < 0.6:
-                    self.attendance_table.setItem(
-                        min_distance_index, 1, QTableWidgetItem("O")
-                    )
+                    self.attendance_table.setItem(min_distance_index, 1, QTableWidgetItem("O"))
 
     def update_image(self, cv_img):
         qt_img = self.convert_cv_qt(cv_img)
@@ -131,14 +101,7 @@ class Attendance(QWidget):
         rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb_image.shape
         bytes_per_line = ch * w
-        convert_to_Qt_format = QImage(
-            rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888
-        )
+        convert_to_Qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
         p = convert_to_Qt_format.scaled(640, 480, Qt.KeepAspectRatio)
         return QPixmap.fromImage(p)
 
-
-app = QApplication([])
-ex = Attendance()
-ex.show()
-app.exec_()

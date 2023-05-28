@@ -1,49 +1,39 @@
-import sys
-import subprocess
-from PyQt5.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QPushButton, QWidget
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton
+from register import Register
+from attendance import Attendance
 
-
-class ButtonWindow(QWidget):
+class MainMenu(QWidget):
     def __init__(self):
         super().__init__()
+        self.title = "Main Menu"
+        self.initUI()
 
-        self.init_ui()
+    def initUI(self):
+        self.setWindowTitle(self.title)
 
-    def init_ui(self):
+        self.register_button = QPushButton("Register", self)
+        self.register_button.clicked.connect(self.open_register)
+
+        self.attendance_button = QPushButton("Attendance", self)
+        self.attendance_button.clicked.connect(self.open_attendance)
+
         layout = QVBoxLayout()
-        hlayout = QHBoxLayout()
+        layout.addWidget(self.register_button)
+        layout.addWidget(self.attendance_button)
 
-        btn1 = QPushButton("학생 등록")
-        btn1.clicked.connect(lambda: self.run_script("button1.py"))
-        btn1.setFixedSize(150, 50)
+        self.setLayout(layout)
 
-        btn2 = QPushButton("출석 체크")
-        btn2.clicked.connect(lambda: self.run_script("attendance.py"))
-        btn2.setFixedSize(150, 50)
+    def open_register(self):
+        self.hide()
+        self.register = Register(self)
+        self.register.show()
 
-        btn3 = QPushButton("수업")
-        btn3.clicked.connect(lambda: self.run_script("button3.py"))
-        btn3.setFixedSize(150, 50)
+    def open_attendance(self):
+        self.hide()
+        self.attendance = Attendance(self)
+        self.attendance.show()
 
-        layout.addWidget(btn1)
-        layout.addWidget(btn2)
-        layout.addWidget(btn3)
-
-        hlayout.addStretch()  # 여백 추가
-        hlayout.addLayout(layout)  # 수평 레이아웃에 수직 레이아웃 추가
-        hlayout.addStretch()  # 여백 추가
-
-        self.setLayout(hlayout)  # 수평 레이아웃 설정
-        self.resize(800, 600)  # 윈도우 크기 설정
-
-        self.setWindowTitle("Vertical Buttons")
-
-    def run_script(self, script_path):
-        subprocess.run(["python", script_path])
-
-
-app = QApplication(sys.argv)
-window = ButtonWindow()
-window.show()
-
-sys.exit(app.exec_())
+app = QApplication([])
+ex = MainMenu()
+ex.show()
+app.exec_()
