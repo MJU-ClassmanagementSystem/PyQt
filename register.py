@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QMessageBox
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QImage, QPixmap
 import os
@@ -60,6 +60,13 @@ class Register(QWidget):
 
                 if label:
                     np.save(label + ".npy", embedding)
+                else:
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Warning)
+                    msg.setText("Error")
+                    msg.setInformativeText('Please enter a name.')
+                    msg.setWindowTitle("Error")
+                    msg.exec_()
 
         self.name_edit.clear()
 
