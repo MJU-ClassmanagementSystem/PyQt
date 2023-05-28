@@ -19,9 +19,7 @@ class VideoWindow(QMainWindow):
         self.cap = cv2.VideoCapture(0)
 
         # 얼굴 인식을 위한 Haar Cascade 분류기 로드
-        self.face_cascade = cv2.CascadeClassifier(
-            cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-        )
+        self.face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
         # QTimer를 사용하여 프레임 업데이트 설정
         self.timer = QTimer(self)
