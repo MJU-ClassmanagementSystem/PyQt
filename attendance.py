@@ -28,8 +28,11 @@ landmark_detector = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat"
 class VideoThread(QThread):
     change_pixmap_signal = pyqtSignal(np.ndarray)
 
-    def run(self):
+    def __init__(self, parent=None):
+        super(VideoThread, self).__init__(parent)
         self.cap = cv2.VideoCapture(0)
+
+    def run(self):
         while True:
             ret, cv_img = self.cap.read()
             if ret:
@@ -55,20 +58,14 @@ class Attendance(QWidget):
         self.image_label = QLabel(self)
         self.image_label.resize(640, 480)
 
-        self.name_edit = QLineEdit(self)
-        self.register_button = QPushButton("Register", self)
-        self.register_button.clicked.connect(self.register_face)
-
         self.attendance_table = QTableWidget(self)
-        self.attendance_table.setColumnCount(2)  # Add this line
+        self.attendance_table.setColumnCount(2)
         self.attendance_table.setHorizontalHeaderLabels(["Name", "Attendance"])
         self.update_button = QPushButton("Update", self)
         self.update_button.clicked.connect(self.update_attendance)
 
         layout = QVBoxLayout()
         layout.addWidget(self.image_label)
-        layout.addWidget(self.name_edit)
-        layout.addWidget(self.register_button)
         layout.addWidget(self.attendance_table)
         layout.addWidget(self.update_button)
 
@@ -76,7 +73,7 @@ class Attendance(QWidget):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_attendance)
-        self.timer.start(10000)  # update attendance every 10 seconds
+        self.timer.start(1000)  # 1초마다 업데이트
 
         self.th = VideoThread(self)
         self.th.change_pixmap_signal.connect(self.update_image)
@@ -97,47 +94,6 @@ class Attendance(QWidget):
         for i, label in enumerate(self.known_labels):
             self.attendance_table.setItem(i, 0, QTableWidgetItem(label))
             self.attendance_table.setItem(i, 1, QTableWidgetItem("X"))
-
-    def register_face(self):
-        ret, frame = self.th.cap.read()
-        if ret:
-            dlib_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            faces = face_detector(dlib_frame)
-            for face in faces:
-                landmarks = landmark_detector(dlib_frame, face)
-                embedding = face_recognition_model.compute_face_descriptor(
-                    dlib_frame, landmarks
-                )
-                embedding = np.array(embedding)  # Convert dlib vector to numpy array
-                label = self.name_edit.text().strip()
-
-                if label:  # Only proceed if the input is not empty
-                    np.save(label + ".npy", embedding)
-                    if (
-                        label in self.known_labels
-                    ):  # Check if the label is already registered
-                        index = self.known_labels.index(label)
-                        self.known_embeddings[
-                            index
-                        ] = embedding  # Update the embedding if the label is already registered
-                    else:
-                        self.known_embeddings.append(embedding)
-                        self.known_labels.append(label)
-                        self.attendance_table.insertRow(
-                            self.attendance_table.rowCount()
-                        )
-                        self.attendance_table.setItem(
-                            self.attendance_table.rowCount() - 1,
-                            0,
-                            QTableWidgetItem(label),
-                        )
-                        self.attendance_table.setItem(
-                            self.attendance_table.rowCount() - 1,
-                            1,
-                            QTableWidgetItem("X"),
-                        )
-
-        self.name_edit.clear()
 
     def update_attendance(self):
         ret, frame = self.th.cap.read()
