@@ -1,11 +1,31 @@
-import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QColor, QPen
-from PyQt5.QtCore import Qt, QTimer
+import os
 import cv2
 import dlib
-
+import numpy as np
+from PyQt5.QtWidgets import (
+    QApplication,
+    QWidget,
+    QVBoxLayout,
+    QPushButton,
+    QLabel,
+    QMessageBox,
+    QLineEdit,
+QHBoxLayout
+)
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
 import pymysql
+
+
+# dlib face detector
+face_detector = dlib.get_frontal_face_detector()
+# dlib face recognition model
+face_recognition_model = dlib.face_recognition_model_v1(
+    "dlib_face_recognition_resnet_model_v1.dat"
+)
+# dlib face landmark detector
+landmark_detector = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+
 
 # MySQL 서버에 연결
 conn = pymysql.connect(
@@ -29,18 +49,32 @@ def save_student(id, name, teacher_id="12345"):
     # 변경사항을 커밋
     conn.commit()
 
-class MyApp(QWidget):
+class VideoThread(QThread):
+    change_pixmap_signal = pyqtSignal(np.ndarray)
+
+    def run(self):
+        self.cap = cv2.VideoCapture(0)
+        while True:
+            ret, cv_img = self.cap.read()
+            if ret:
+                self.change_pixmap_signal.emit(cv_img)
+            else:
+                print("Unable to access the camera.")
+
+
+class Attendance(QWidget):
     def __init__(self):
         super().__init__()
 
-        # 카메라 객체를 설정합니다
-        self.cap = cv2.VideoCapture(0)
+        self.title = "Register"
+        self.initUI()
 
-        # Load models and initialize variables
-        self.face_detector = dlib.get_frontal_face_detector()
+    def initUI(self):
+        self.setWindowTitle(self.title)
 
-        # 이미지를 표시할 라벨을 설정합니다
-        self.label = QLabel(self)
+        # video
+        self.image_label = QLabel(self)
+        self.image_label.resize(1174, 632)
 
         # 학생 정보를 입력할 라인 에디트를 설정합니다
         self.input_student_id = QLineEdit()
@@ -50,12 +84,13 @@ class MyApp(QWidget):
         self.label_student_id = QLabel("학번:", self)
         self.label_student_name = QLabel("이름:", self)
 
-        # 등록 버튼을 설정합니다
-        self.button_register = QPushButton("Register")
-        self.button_register.setEnabled(False)  # 초기에 비활성화 상태로 설정합니다
-        self.button_register.clicked.connect(self.registerFace)
+        self.register_button = QPushButton("Register", self)
+        self.register_button.clicked.connect(self.handle_register_button)
+        # self.register_button.clicked.connect(self.register_face)
 
-        # 수평 레이아웃을 생성하고 위젯을 추가합니다
+        layout = QVBoxLayout()
+        layout.addWidget(self.image_label)
+
         hbox_id = QHBoxLayout()
         hbox_id.addWidget(self.label_student_id)
         hbox_id.addWidget(self.input_student_id)
@@ -63,74 +98,69 @@ class MyApp(QWidget):
         hbox_name = QHBoxLayout()
         hbox_name.addWidget(self.label_student_name)
         hbox_name.addWidget(self.input_student_name)
+        layout.addLayout(hbox_id)
+        layout.addLayout(hbox_name)
 
-        hbox_register = QHBoxLayout()
-        hbox_register.addWidget(self.button_register)
+        layout.addWidget(self.register_button)
 
-        vbox = QVBoxLayout()
-        vbox.addWidget(self.label)
-        vbox.addLayout(hbox_id)
-        vbox.addLayout(hbox_name)
-        vbox.addLayout(hbox_register)
+        self.setLayout(layout)
 
-        self.setLayout(vbox)
-        self.setWindowTitle("Face Register with PyQt")
+        self.th = VideoThread(self)
+        self.th.change_pixmap_signal.connect(self.update_image)
+        self.th.start()
 
-        # 타이머를 설정합니다
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.viewCam)
-        self.timer.start(1)
-
-    def viewCam(self):
-        # OpenCV를 이용하여 카메라로부터 이미지를 캡쳐합니다
-        ret, frame = self.cap.read()
-        dlib_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        # 얼굴 인식 수행
-        faces = self.face_detector(dlib_frame)
-
-        # 얼굴이 인식되었다면 등록 버튼을 활성화합니다
-        if len(faces) > 0:
-            self.button_register.setEnabled(True)
-            # 얼굴 주위에 네모 상자 그리기
+    def handle_register_button(self):
+        ret, frame = self.th.cap.read()
+        if ret:
+            dlib_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            faces = face_detector(dlib_frame)
+            if len(faces) > 0:
+                if self.register_face():
+                    QMessageBox.information(self, "알림", "얼굴이 저장되었습니다.")
+            else:
+                QMessageBox.warning(self, "알림", "얼굴이 인식되지 않았습니다.")
+    def register_face(self):
+        ret, frame = self.th.cap.read()
+        if ret:
+            dlib_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            faces = face_detector(dlib_frame)
             for face in faces:
-                left = face.left()
-                top = face.top()
-                right = face.right()
-                bottom = face.bottom()
-                cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-        else:
-            self.button_register.setEnabled(False)
+                landmarks = landmark_detector(dlib_frame, face)
+                embedding = face_recognition_model.compute_face_descriptor(
+                    dlib_frame, landmarks
+                )
+                embedding = np.array(embedding)  # Convert dlib vector to numpy array
+                id = self.input_student_id.text().strip()
+                name = self.input_student_name.text().strip()
 
-        # OpenCV 형식의 이미지를 Pixmap으로 변환합니다
-        image = QImage(
-            frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888
-        ).rgbSwapped()
-        pixmap = QPixmap.fromImage(image)
-
-        # Pixmap을 라벨에 표시합니다
-        self.label.setPixmap(pixmap)
-
-    def registerFace(self):
-        # 학번과 이름을 가져옵니다
-        student_id = self.input_student_id.text()
-        student_name = self.input_student_name.text()
-
-        # OpenCV를 이용하여 카메라로부터 이미지를 캡쳐합니다
-        ret, frame = self.cap.read()
-
-        # 이미지를 저장합니다
-        cv2.imwrite(f"{student_id}_{student_name}.jpg", frame)
-        save_student(student_id, student_name)
-        print("Face registered!")
-
-    def closeEvent(self, event):
-        event.accept()
-        self.cap.release()
+                if id and name:  # Only proceed if the input is not empty
+                    np.save(id + ".npy", embedding)
+                    save_student(id, name)
+                else:
+                    QMessageBox.warning(self, "알림", "학번과 이름을 입력해주세요")
+                    return False
+        self.input_student_id.clear()
+        self.input_student_name.clear()
+        return True
 
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    ex = MyApp()
-    ex.show()
-    sys.exit(app.exec_())
+    def update_image(self, cv_img):
+        qt_img = self.convert_cv_qt(cv_img)
+        self.image_label.setPixmap(qt_img)
+
+    @staticmethod
+    def convert_cv_qt(cv_img):
+        rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb_image.shape
+        bytes_per_line = ch * w
+        convert_to_Qt_format = QImage(
+            rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888
+        )
+        p = convert_to_Qt_format.scaled(1174, 632, Qt.KeepAspectRatio)
+        return QPixmap.fromImage(p)
+
+
+app = QApplication([])
+ex = Attendance()
+ex.show()
+app.exec_()

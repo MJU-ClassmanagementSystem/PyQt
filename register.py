@@ -14,10 +14,12 @@ known_embeddings = []
 known_labels = []
 blink_counts = []
 
+
 # 사전에 등록된 얼굴 임베딩과 라벨 추가 함수
 def add_known_face_embedding(embedding, label):
     known_embeddings.append(embedding)
     known_labels.append(label)
+
 
 # 실시간 비디오 캡처 시작
 cap = cv2.VideoCapture(0)
@@ -56,6 +58,7 @@ def calculate_eye_aspect_ratio(eye_landmarks):
     aspect_ratio = vertical_length / horizontal_length
 
     return aspect_ratio
+
 
 while True:
     # 비디오 프레임 읽기
@@ -99,7 +102,7 @@ while True:
 
         # 감정 분석을 위해 이미지를 흑백으로 변환
         gray_face_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY)
-        
+
         # 이미지를 모델에 전달하여 감정 예측
         resized_img = cv2.resize(gray_face_img, (64, 64), interpolation=cv2.INTER_AREA)
         img_array = tf.keras.preprocessing.image.img_to_array(resized_img)
@@ -114,7 +117,7 @@ while True:
         i = 25
         for e, v in emotions.items():
             v = format(v, '.4f')
-            cv2.putText(frame, f"{e}: {v}", (left, bottom +i ), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
+            cv2.putText(frame, f"{e}: {v}", (left, bottom + i), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
             i += 25
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -138,7 +141,8 @@ while True:
             cv2.circle(frame, (point.x, point.y), 1, (0, 0, 255), -1)
         for point in right_eye_landmarks:
             cv2.circle(frame, (point.x, point.y), 1, (0, 0, 255), -1)
-        cv2.putText(frame, f"Blinks: {blink_counts[min_distance_idx]}", (left, top - 60), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        cv2.putText(frame, f"Blinks: {blink_counts[min_distance_idx]}", (left, top - 60), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
+                    (0, 255, 0), 2)
     # 화면에 출력
     cv2.imshow('Face Recognition', frame)
 
