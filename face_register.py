@@ -159,6 +159,18 @@ class Attendance(QWidget):
         p = convert_to_Qt_format.scaled(1174, 632, Qt.KeepAspectRatio)
         return QPixmap.fromImage(p)
 
+    def closeEvent(self, event):
+        reply = QMessageBox.question(
+            self, 'Message', 'Are you sure you want to exit?',
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            # 원하는 로직을 여기에 추가합니다.
+            print("종료되었습니다.")
+            event.accept()
+        else:
+            event.ignore()
 
 app = QApplication([])
 ex = Attendance()
