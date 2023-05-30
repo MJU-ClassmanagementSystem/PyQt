@@ -1,6 +1,7 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel
 from register import Register
 from attendance import Attendance
+import sys
 
 class MainMenu(QWidget):
     def __init__(self):
@@ -33,7 +34,8 @@ class MainMenu(QWidget):
         self.attendance = Attendance(self)
         self.attendance.show()
 
-app = QApplication([])
-ex = MainMenu()
-ex.show()
-app.exec_()
+if __name__ == "__main__":
+    app = QApplication([])
+    ex = MainMenu()
+    ex.show()
+    app.exec_()
