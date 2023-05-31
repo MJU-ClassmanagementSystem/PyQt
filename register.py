@@ -110,6 +110,17 @@ class Register(QWidget):
                 embedding = np.array(embedding)
                 label_id = self.lineEdit_id.text().strip()
                 label_name = self.lineEdit_name.text().strip()
+                label = self.name_edit.text().strip()
+
+                if label:
+                    os.makedirs('faces', exist_ok=True)  # Ensure the 'faces' directory exists
+                    np.save(os.path.join('faces', label + ".npy"), embedding)  # Save in 'faces' directory
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Information)
+                    msg.setText("Success")
+                    msg.setInformativeText('You have been registered.')
+                    msg.setWindowTitle("Success")
+                    msg.exec_()
 
                 if label_id and label_name:
                     # Save to MySQL database

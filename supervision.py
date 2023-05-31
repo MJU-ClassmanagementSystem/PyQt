@@ -1,4 +1,5 @@
 import glob
+import os
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt
@@ -82,9 +83,11 @@ class Supervision(QWidget):
     
     
     def load_face_embeddings(self, npy_files):
-        for npy_file in npy_files:
-            person_embedding = np.load(npy_file)
-            label = npy_file.split('0')[0]
+        faces_dir = 'faces'
+        npy_files = [file for file in os.listdir(faces_dir) if file.endswith(".npy")]
+        for file in npy_files:
+            person_embedding = np.load(os.path.join(faces_dir, file))
+            label = file.replace(".npy", "")
             self.add_known_face_embedding(person_embedding, label)
 
     @staticmethod
@@ -154,18 +157,19 @@ class Supervision(QWidget):
             cv2.putText(cv_img, f"{label} {min_distance}", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
             face_img = cv_img[top:bottom, left:right]
-            gray_face_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY)
+            if face_img.size > 0:
+                gray_face_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY)
 
-            resized_img = cv2.resize(gray_face_img, (64, 64), interpolation=cv2.INTER_AREA)
-            img_array = tf.keras.preprocessing.image.img_to_array(resized_img)
-            img_array = np.expand_dims(img_array, axis=0)
-            img_array /= 255
-            predictions = self.emotion_model.predict(img_array)
-            max_index = np.argmax(predictions[0])
-            emotion = self.emotion_labels[max_index]
-            emotions = {k: v for k, v in zip(self.emotion_labels, predictions[0])}
+                resized_img = cv2.resize(gray_face_img, (64, 64), interpolation=cv2.INTER_AREA)
+                img_array = tf.keras.preprocessing.image.img_to_array(resized_img)
+                img_array = np.expand_dims(img_array, axis=0)
+                img_array /= 255
+                predictions = self.emotion_model.predict(img_array)
+                max_index = np.argmax(predictions[0])
+                emotion = self.emotion_labels[max_index]
+                emotions = {k: v for k, v in zip(self.emotion_labels, predictions[0])}
 
-            cv2.putText(cv_img, emotion, (left, top - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+                cv2.putText(cv_img, emotion, (left, top - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
 
         qt_img = self.convert_cv_qt(cv_img)
         self.image_label.setPixmap(qt_img)
