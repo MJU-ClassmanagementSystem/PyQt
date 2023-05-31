@@ -13,7 +13,7 @@ class MainMenu(QWidget):
         self.setWindowTitle(self.title)
         self.setGeometry(500, 500, 500, 200)
 
-        self.label_user_id = QLabel("ID here! ID here! ID here! ID here!", self)  # 사용자 ID를 보여줄 레이블
+        self.label_user_id = QLabel("ID here!", self)  # 사용자 ID를 보여줄 레이블
 
         self.register_button = QPushButton("Register", self)
         self.register_button.clicked.connect(self.open_register)
