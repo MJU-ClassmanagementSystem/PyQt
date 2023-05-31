@@ -8,6 +8,8 @@ import numpy as np
 import os
 # import pymysql
 from datetime import datetime
+
+from analyze import MyApp
 # MySQL 서버에 연결
 # conn = pymysql.connect(
 #     host='localhost',

@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QMessageBox, QLabel
 from analyze import MyApp
 from register import Register
 from attendance import Attendance
@@ -11,6 +11,9 @@ class MainMenu(QWidget):
 
     def initUI(self):
         self.setWindowTitle(self.title)
+        self.setGeometry(500, 500, 500, 200)
+
+        self.label_user_id = QLabel("ID here!", self)
 
         self.register_button = QPushButton("Register", self)
         self.register_button.clicked.connect(self.open_register)
@@ -31,12 +34,15 @@ class MainMenu(QWidget):
 
     def open_register(self):
         # self.hide()
-        self.register = Register()
+        # self.register = Register()
+        self.register = Register(self.user_id)
         self.register.show()
+
     def open_attendance(self):
         # self.hide()
         self.attendance = Attendance()
         self.attendance.show()
+        
     def open_analyze(self):
         # self.hide()
         self.analyze = MyApp()
@@ -53,7 +59,12 @@ class MainMenu(QWidget):
         else:
             event.ignore()
 
-app = QApplication([])
-ex = MainMenu()
-ex.show()
-app.exec_()
+    def set_user_id(self, user_id):
+        self.user_id = user_id
+        self.label_user_id.setText("id: " + self.user_id)
+
+if __name__ == "__main__":
+    app = QApplication([])
+    ex = MainMenu()
+    ex.show()
+    app.exec_()
