@@ -40,7 +40,7 @@ class MainMenu(QWidget):
 
     def open_attendance(self):
         # self.hide()
-        self.attendance = Attendance()
+        self.attendance = Attendance(self.user_id)
         self.attendance.show()
         
     def open_analyze(self):

@@ -6,35 +6,22 @@ import cv2
 import dlib
 import numpy as np
 import os
-# import pymysql
+import mysql.connector
 from datetime import datetime
 
 from analyze import MyApp
-# MySQL 서버에 연결
-# conn = pymysql.connect(
-#     host='localhost',
-#     user='root',
-#     password='',
-#     database='cms',
-#     cursorclass=pymysql.cursors.DictCursor
-# )
 
-# 커서 생성
-# cursor = conn.cursor()
-# def check_attendance(student_id, attend_type, teacher_id="12345"):
-
-#     current_date = datetime.now().strftime('%Y-%m-%d')
-#     sql = "INSERT INTO attendance (attend_type, date, student_id, teacher_id) VALUES (%s, %s, %s, %s)"
-#     cursor.execute(sql, (attend_type, current_date, student_id, teacher_id))
-
-#     # 변경사항을 커밋
-#     conn.commit()
-# 0 - 출첵, 1 - 결석, 2 - 실종
-
+# MySQL 연결 정보
+db_config = {
+    'host': '34.22.65.53',
+    'user': 'root',
+    'password': 'cms',
+    'database': 'cms'
+}
 
 
 class Attendance(QWidget):
-    def __init__(self):
+    def __init__(self, user_id):
         super().__init__()
 
         # 카메라 객체를 설정합니다
@@ -52,6 +39,8 @@ class Attendance(QWidget):
         self.timer = QTimer()
         self.timer.timeout.connect(self.viewCam)
         self.timer.start(20)
+
+        self.user_id = user_id
 
         self.setLayout(vbox)
         self.setWindowTitle("Attendance")
@@ -107,11 +96,13 @@ class Attendance(QWidget):
                         min_distance_index = i
 
                 if min_distance < 0.3:
-                    # check_attendance(self.known_labels[min_distance_index], 0)
                     if not self.attended[min_distance_index]:
-                        # check_attendance(self.known_labels[min_distance_index], 0)
                         self.attended[min_distance_index] = True
-                        QMessageBox.information(self, "알림", f"{self.known_labels[min_distance_index]} 출석체크 되었습니다.")
+                        student_id = self.known_labels[min_distance_index]
+                        teacher_id = self.get_teacher_id()  # 로그인 시 사용한 user_id 가져오기
+                        attend_type = 0  # 출석 유형 O
+                        self.check_attendance(student_id, teacher_id, attend_type)
+                        QMessageBox.information(self, "알림", f"{student_id} 출석체크 되었습니다.")
                     self.attended[min_distance_index] = True
 
                 # 얼굴 영역에 라벨 표시
@@ -140,6 +131,41 @@ class Attendance(QWidget):
 
             # Pixmap을 라벨에 표시합니다
             self.label.setPixmap(pixmap)
+
+    def check_attendance(self, student_id, teacher_id, attend_type):
+        # 현재 시간을 가져옵니다
+        now = datetime.now()
+        date = now.strftime("%Y-%m-%d %H:%M:%S")
+
+        try:
+            # MySQL 데이터베이스에 연결합니다
+            conn = mysql.connector.connect(**db_config)
+
+            # 커서를 생성합니다
+            cursor = conn.cursor()
+
+            # attendance 테이블에 데이터를 삽입하는 SQL 쿼리를 작성합니다
+            sql = "INSERT INTO attendance (attend_type, date, student_id, teacher_id) VALUES (%s, %s, %s, %s)"
+            values = (attend_type, date, student_id, teacher_id)
+
+            # SQL 쿼리를 실행합니다
+            cursor.execute(sql, values)
+
+            # 변경 사항을 커밋합니다
+            conn.commit()
+
+            # 커넥션을 닫습니다
+            conn.close()
+
+        except mysql.connector.Error as e:
+            print(f"Error: {e}")
+
+
+    def get_teacher_id(self):
+        # 로그인 시 사용한 user_id를 가져오는 함수를 구현하세요
+        # 예를 들어, 로그인할 때 저장한 user_id를 반환하도록 합니다
+        # 이 예시에서는 임의로 "teacher123"을 반환하도록 설정하였습니다
+        return self.user_id
 
     def closeEvent(self, event):
         reply = QMessageBox.question(
