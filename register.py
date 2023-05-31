@@ -128,7 +128,7 @@ class Register(QWidget):
                 embedding = self.face_recognition_model.compute_face_descriptor(
                     dlib_frame, landmarks
                 )
-                np.save(f"{student_id}.npy", embedding)
+                np.save(f"faces/{student_id}.npy", embedding)
                 # MySQL에 쿼리를 실행하여 학생 정보를 등록합니다
                 self.save_student(student_id, name)
                 QMessageBox.information(
