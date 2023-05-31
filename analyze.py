@@ -253,7 +253,7 @@ class MyApp(QWidget):
         
         for key, value in self.students.items():
             values = list(value.getStudentEmotion().values())
-            values.append('1')
+            values.append(key)
             values.append(current_time)
             mycursor.execute(query, tuple(values))
             
