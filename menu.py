@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QMessageBox
-from face_register import Register
+from register import Register
 from attendance import Attendance
 
 class MainMenu(QWidget):
@@ -17,21 +17,29 @@ class MainMenu(QWidget):
         self.attendance_button = QPushButton("Attendance", self)
         self.attendance_button.clicked.connect(self.open_attendance)
 
+        self.analyze_button = QPushButton("Analyze", self)
+        self.analyze_button.clicked.connect(self.open_analyze)
+
 
         layout = QVBoxLayout()
         layout.addWidget(self.register_button)
         layout.addWidget(self.attendance_button)
+        layout.addWidget(self.analyze_button)
 
         self.setLayout(layout)
 
     def open_register(self):
-        self.hide()
-        self.register = Register(self)
+        # self.hide()
+        self.register = Register()
         self.register.show()
     def open_attendance(self):
-        self.hide()
+        # self.hide()
         self.attendance = Attendance()
         self.attendance.show()
+    def open_analyze(self):
+        # self.hide()
+        self.analyze = Attendance()
+        self.analyze.show()
 
     def closeEvent(self, event):
         reply = QMessageBox.question(
