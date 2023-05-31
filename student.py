@@ -40,7 +40,7 @@ class Student:
       
     def getStudentEmotion(self):
         return_emotion ={}
-        return_emotion["student_id"] = self.student_id
+        # return_emotion["student_id"] = self.student_id
         for emotion, value in self.emotions.items():
             return_emotion[emotion] = value/self.count
         return return_emotion
