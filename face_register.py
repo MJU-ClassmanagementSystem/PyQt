@@ -15,7 +15,7 @@ QHBoxLayout
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 import pymysql
-
+from video_thread import VideoThread
 
 # dlib face detector
 face_detector = dlib.get_frontal_face_detector()
@@ -49,25 +49,13 @@ def save_student(id, name, teacher_id="12345"):
     # 변경사항을 커밋
     conn.commit()
 
-class VideoThread(QThread):
-    change_pixmap_signal = pyqtSignal(np.ndarray)
-
-    def run(self):
-        self.cap = cv2.VideoCapture(0)
-        while True:
-            ret, cv_img = self.cap.read()
-            if ret:
-                self.change_pixmap_signal.emit(cv_img)
-            else:
-                print("Unable to access the camera.")
-
-
-class Attendance(QWidget):
-    def __init__(self):
+class Register(QWidget):
+    def __init__(self, main_meun):
         super().__init__()
 
         self.title = "Register"
         self.initUI()
+        self.main_menu = main_meun
 
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -108,6 +96,7 @@ class Attendance(QWidget):
         self.th = VideoThread(self)
         self.th.change_pixmap_signal.connect(self.update_image)
         self.th.start()
+
 
     def handle_register_button(self):
         ret, frame = self.th.cap.read()
@@ -166,13 +155,21 @@ class Attendance(QWidget):
         )
 
         if reply == QMessageBox.Yes:
-            # 원하는 로직을 여기에 추가합니다.
-            print("종료되었습니다.")
+
+            if self.th is not None:
+                self.th.stop()
+                self.th.wait()
+            self.main_menu.show()
             event.accept()
+
         else:
             event.ignore()
 
-app = QApplication([])
-ex = Attendance()
-ex.show()
-app.exec_()
+    def stop_thread(self):
+        self.th.quit()
+
+# if __name__ == '__main__':
+#     app = QApplication([])
+#     ex = Attendance()
+#     ex.show()
+#     app.exec_()
