@@ -65,7 +65,8 @@ class Register(QWidget):
                 label = self.name_edit.text().strip()
 
                 if label:
-                    np.save(label + ".npy", embedding)
+                    os.makedirs('faces', exist_ok=True)  # Ensure the 'faces' directory exists
+                    np.save(os.path.join('faces', label + ".npy"), embedding)  # Save in 'faces' directory
                     msg = QMessageBox()
                     msg.setIcon(QMessageBox.Information)
                     msg.setText("Success")

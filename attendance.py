@@ -60,9 +60,10 @@ class Attendance(QWidget):
         self.known_embeddings = []
         self.known_labels = []
 
-        npy_files = [file for file in os.listdir() if file.endswith(".npy")]
+        faces_dir = 'faces'
+        npy_files = [file for file in os.listdir(faces_dir) if file.endswith(".npy")]
         for file in npy_files:
-            embedding = np.load(file)
+            embedding = np.load(os.path.join(faces_dir, file))
             label = file.replace(".npy", "")
             self.known_embeddings.append(embedding)
             self.known_labels.append(label)

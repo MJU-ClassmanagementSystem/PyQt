@@ -1,4 +1,5 @@
 import glob
+import os
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt
@@ -82,9 +83,11 @@ class Supervision(QWidget):
     
     
     def load_face_embeddings(self, npy_files):
-        for npy_file in npy_files:
-            person_embedding = np.load(npy_file)
-            label = npy_file.split('0')[0]
+        faces_dir = 'faces'
+        npy_files = [file for file in os.listdir(faces_dir) if file.endswith(".npy")]
+        for file in npy_files:
+            person_embedding = np.load(os.path.join(faces_dir, file))
+            label = file.replace(".npy", "")
             self.add_known_face_embedding(person_embedding, label)
 
     @staticmethod
