@@ -248,7 +248,8 @@ class MyApp(QWidget):
 
         # id와 password로 인증 확인
         current_time = datetime.now()
-        query = "INSERT INTO emotion (angry, disgust, fear, happy, neutral, sad, surprise, student_id, date) VALUES (%s,%s, %s, %s, %s, %s, %s, %s, %s)"
+        query = "INSERT INTO emotion (angry, disgust, fear, happy, neutral, sad, surprise, student_id,date) VALUES (%s,%s, %s, %s, %s, %s, %s, %s, %s)"
+        blink_query = "INSERT INTO focus (date, focus_rate, student_id) VALUES (%s,%s, %s)"
         
         
         for key, value in self.students.items():
@@ -256,6 +257,9 @@ class MyApp(QWidget):
             values.append(key)
             values.append(current_time)
             mycursor.execute(query, tuple(values))
+            if value.get_blink() != 0:
+                blinks = [current_time, self.calculate_score(value.get_blink()), key]
+                mycursor.execute(blink_query, tuple(blinks))
             
           # print(f"blink: {value.get_blink()}")
           # for k, v in value.getStudentEmotion().items():
@@ -268,6 +272,17 @@ class MyApp(QWidget):
             
         event.accept()
         self.cap.release()
+    
+    def calculate_score(self,blink):
+      if blink <= 100:
+          score = 100
+      elif blink <= 200:
+          score = 100 - ((blink - 100) * 0.5)
+      elif blink <= 300:
+          score = 50 - ((blink - 200) * 0.5)   
+      else: 
+          score = 0
+      return score
 
 
 if __name__ == "__main__":
