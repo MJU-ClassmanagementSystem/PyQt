@@ -6,27 +6,27 @@ import cv2
 import dlib
 import numpy as np
 import os
-import pymysql
+# import pymysql
 from datetime import datetime
 # MySQL 서버에 연결
-conn = pymysql.connect(
-    host='localhost',
-    user='root',
-    password='',
-    database='cms',
-    cursorclass=pymysql.cursors.DictCursor
-)
+# conn = pymysql.connect(
+#     host='localhost',
+#     user='root',
+#     password='',
+#     database='cms',
+#     cursorclass=pymysql.cursors.DictCursor
+# )
 
 # 커서 생성
-cursor = conn.cursor()
-def check_attendance(student_id, attend_type, teacher_id="12345"):
+# cursor = conn.cursor()
+# def check_attendance(student_id, attend_type, teacher_id="12345"):
 
-    current_date = datetime.now().strftime('%Y-%m-%d')
-    sql = "INSERT INTO attendance (attend_type, date, student_id, teacher_id) VALUES (%s, %s, %s, %s)"
-    cursor.execute(sql, (attend_type, current_date, student_id, teacher_id))
+#     current_date = datetime.now().strftime('%Y-%m-%d')
+#     sql = "INSERT INTO attendance (attend_type, date, student_id, teacher_id) VALUES (%s, %s, %s, %s)"
+#     cursor.execute(sql, (attend_type, current_date, student_id, teacher_id))
 
-    # 변경사항을 커밋
-    conn.commit()
+#     # 변경사항을 커밋
+#     conn.commit()
 # 0 - 출첵, 1 - 결석, 2 - 실종
 
 
@@ -107,7 +107,7 @@ class Attendance(QWidget):
                 if min_distance < 0.3:
                     # check_attendance(self.known_labels[min_distance_index], 0)
                     if not self.attended[min_distance_index]:
-                        check_attendance(self.known_labels[min_distance_index], 0)
+                        # check_attendance(self.known_labels[min_distance_index], 0)
                         self.attended[min_distance_index] = True
                         QMessageBox.information(self, "알림", f"{self.known_labels[min_distance_index]} 출석체크 되었습니다.")
                     self.attended[min_distance_index] = True
@@ -146,9 +146,9 @@ class Attendance(QWidget):
         )
 
         if reply == QMessageBox.Yes:
-            for i in range(len(self.attended)):
-                if not self.attended[i]:
-                    check_attendance(self.known_labels[i], 1)
+            # for i in range(len(self.attended)):
+                # if not self.attended[i]:
+                    # check_attendance(self.known_labels[i], 1)
             self.close()
             event.accept()
             self.cap.release()

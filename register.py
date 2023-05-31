@@ -5,28 +5,28 @@ from PyQt5.QtCore import Qt, QTimer
 import cv2
 import dlib
 import numpy as np
-import pymysql
+# import pymysql
 # MySQL 서버에 연결
-conn = pymysql.connect(
-    host='localhost',
-    user='root',
-    password='',
-    database='cms',
-    cursorclass=pymysql.cursors.DictCursor
-)
+# conn = pymysql.connect(
+#     host='localhost',
+#     user='root',
+#     password='',
+#     database='cms',
+#     cursorclass=pymysql.cursors.DictCursor
+# )
 
 # 커서 생성
-cursor = conn.cursor()
-def save_student(id, name, teacher_id="12345"):
+# cursor = conn.cursor()
+# def save_student(id, name, teacher_id="12345"):
 
-    # 이미지 BLOB 데이터와 동적으로 입력 받은 값들을 삽입하는 SQL 쿼리
-    sql = "INSERT INTO student (id, name, teacher_id) VALUES (%s, %s, %s)"
+#     # 이미지 BLOB 데이터와 동적으로 입력 받은 값들을 삽입하는 SQL 쿼리
+#     sql = "INSERT INTO student (id, name, teacher_id) VALUES (%s, %s, %s)"
 
-    # BLOB 데이터 삽입
-    cursor.execute(sql, (id, name, teacher_id))
+#     # BLOB 데이터 삽입
+#     cursor.execute(sql, (id, name, teacher_id))
 
-    # 변경사항을 커밋
-    conn.commit()
+#     # 변경사항을 커밋
+#     conn.commit()
 
 class Register(QWidget):
     def __init__(self):
@@ -138,7 +138,7 @@ class Register(QWidget):
                     dlib_frame, landmarks
                 )
                 np.save(f"{student_id}.npy", embedding)
-                save_student(student_id, name)
+                # save_student(student_id, name)
                 QMessageBox.information(
                     self, "Registration Successful", "Face registered successfully!"
                 )
