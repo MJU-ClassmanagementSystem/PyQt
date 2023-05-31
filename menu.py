@@ -31,9 +31,14 @@ class MainMenu(QWidget):
 
         self.setLayout(layout)
 
+    # def open_register(self):
+    #     self.hide()
+    #     self.register = Register(self)
+    #     self.register.show()
+
     def open_register(self):
         self.hide()
-        self.register = Register(self)
+        self.register = Register(self, self.user_id)
         self.register.show()
 
     def open_attendance(self):

@@ -20,10 +20,20 @@ db_config = {
 }
 
 class Register(QWidget):
-    def __init__(self, main_menu):
+    # def __init__(self, main_menu):
+    #     super().__init__()
+    #     self.title = "Register"
+    #     self.main_menu = main_menu
+    #     self.initUI()
+    #     self.th = VideoThread(self)
+    #     self.th.change_pixmap_signal.connect(self.update_image)
+    #     self.th.start()
+
+    def __init__(self, main_menu, user_id):
         super().__init__()
         self.title = "Register"
         self.main_menu = main_menu
+        self.user_id = user_id
         self.initUI()
         self.th = VideoThread(self)
         self.th.change_pixmap_signal.connect(self.update_image)
@@ -67,38 +77,6 @@ class Register(QWidget):
         self.th.stop()  # Assume that you have a method to stop the thread in your VideoThread class
         event.accept()  # Let the window close
 
-    # def register_face(self):
-    #     ret, frame = self.th.cap.read()
-    #     if ret:
-    #         dlib_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    #         faces = face_detector(dlib_frame)
-    #         for face in faces:
-    #             landmarks = landmark_detector(dlib_frame, face)
-    #             embedding = face_recognition_model.compute_face_descriptor(dlib_frame, landmarks)
-    #             embedding = np.array(embedding)
-    #             label_id = self.lineEdit_id.text().strip()
-    #             label_name = self.lineEdit_name.text().strip()
-
-    #             if label_id and label_name:
-    #                 # Save to MySQL database
-    #                 # ...
-    #                 msg = QMessageBox()
-    #                 msg.setIcon(QMessageBox.Information)
-    #                 msg.setText("Success")
-    #                 msg.setInformativeText('You have been registered.')
-    #                 msg.setWindowTitle("Success")
-    #                 msg.exec_()
-    #             else:
-    #                 msg = QMessageBox()
-    #                 msg.setIcon(QMessageBox.Critical)
-    #                 msg.setText("Error")
-    #                 msg.setInformativeText('Please enter ID and Name.')
-    #                 msg.setWindowTitle("Error")
-    #                 msg.exec_()
-
-    #     self.lineEdit_id.clear()
-    #     self.lineEdit_name.clear()
-
     def register_face(self):
         ret, frame = self.th.cap.read()
         if ret:
@@ -110,7 +88,8 @@ class Register(QWidget):
                 embedding = np.array(embedding)
                 label_id = self.lineEdit_id.text().strip()
                 label_name = self.lineEdit_name.text().strip()
-                label = self.name_edit.text().strip()
+                # label = self.name_edit.text().strip()  # 이 부분을 아래의 코드로 수정하세요.
+                label = self.lineEdit_name.text().strip()
 
                 if label:
                     os.makedirs('faces', exist_ok=True)  # Ensure the 'faces' directory exists
@@ -130,7 +109,8 @@ class Register(QWidget):
                         
                         # 쿼리 실행 예시
                         sql = "INSERT INTO student (id, name, parent_id, teacher_id) VALUES (%s, %s, %s, %s)"
-                        values = (label_id, label_name, "123", "60182995")
+                        # values = (label_id, label_name, "123", "60182995")
+                        values = (label_id, label_name, "123", self.user_id)
                         cursor.execute(sql, values)
                         connection.commit()
                         

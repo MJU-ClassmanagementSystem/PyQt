@@ -1,3 +1,4 @@
+from datetime import date
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QLabel
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QImage, QPixmap
@@ -6,10 +7,18 @@ import cv2
 import dlib
 import numpy as np
 from video_thread import VideoThread
+import mysql.connector
 
 face_detector = dlib.get_frontal_face_detector()
 face_recognition_model = dlib.face_recognition_model_v1("dlib_face_recognition_resnet_model_v1.dat")
 landmark_detector = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+
+db_config = {
+        'host' : '34.22.65.53',
+        'user' : 'root',
+        'password' : 'cms',
+        'database' : 'cms'
+}
 
 class Attendance(QWidget):
     def __init__(self, main_menu):
@@ -73,6 +82,28 @@ class Attendance(QWidget):
             self.attendance_table.setItem(i, 0, QTableWidgetItem(label))
             self.attendance_table.setItem(i, 1, QTableWidgetItem("X"))
 
+    # def update_attendance(self):
+    #     ret, frame = self.th.cap.read()
+    #     if ret:
+    #         dlib_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    #         faces = face_detector(dlib_frame)
+    #         for face in faces:
+    #             landmarks = landmark_detector(dlib_frame, face)
+    #             unknown_embedding = face_recognition_model.compute_face_descriptor(dlib_frame, landmarks)
+    #             unknown_embedding = np.array(unknown_embedding)
+
+    #             min_distance = 1.0
+    #             min_distance_index = -1
+    #             for i, known_embedding in enumerate(self.known_embeddings):
+    #                 distance = np.linalg.norm(unknown_embedding - known_embedding)
+    #                 if distance < min_distance:
+    #                     min_distance = distance
+    #                     min_distance_index = i
+
+    #             if min_distance < 0.6:
+    #                 self.attendance_table.setItem(min_distance_index, 1, QTableWidgetItem("O"))
+
+
     def update_attendance(self):
         ret, frame = self.th.cap.read()
         if ret:
@@ -92,7 +123,33 @@ class Attendance(QWidget):
                         min_distance_index = i
 
                 if min_distance < 0.6:
-                    self.attendance_table.setItem(min_distance_index, 1, QTableWidgetItem("O"))
+                    # student_id = self.known_labels[min_distance_index]
+                    student_id = "1"
+                    attend_type = 0  # 출석 상태를 나타내는 값, O: 0, X: 1
+                    teacher_id = "60182995"
+                    current_date = date.today().strftime("%Y-%m-%d")
+                    
+                    try:
+                        connection = mysql.connector.connect(**db_config)
+                        cursor = connection.cursor()
+                        
+                        # 출석 정보 저장 쿼리 실행
+                        sql = "INSERT INTO attendance (attend_type, date, student_id, teacher_id) VALUES (%s, %s, %s, %s)"
+                        values = (attend_type, current_date, student_id, teacher_id)
+                        cursor.execute(sql, values)
+                        connection.commit()
+                        
+                        # 출석 테이블 업데이트
+                        for i in range(self.attendance_table.rowCount()):
+                            if self.attendance_table.item(i, 0).text() == student_id:
+                                self.attendance_table.setItem(i, 1, QTableWidgetItem("O"))
+                                break
+                    except mysql.connector.Error as error:
+                        print(f"Error while connecting to MySQL: {error}")
+                    finally:
+                        if connection.is_connected():
+                            cursor.close()
+                            connection.close()
 
     def update_image(self, cv_img):
         qt_img = self.convert_cv_qt(cv_img)
