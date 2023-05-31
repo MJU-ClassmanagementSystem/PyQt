@@ -1,3 +1,4 @@
+import glob
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt
@@ -10,17 +11,23 @@ from video_thread import VideoThread
 
 
 class Supervision(QWidget):
-    def __init__(self):
+    def __init__(self,main_menu):
         super().__init__()
+        self.main_menu = main_menu
 
         self.face_recognition_model = dlib.face_recognition_model_v1('dlib_face_recognition_resnet_model_v1.dat')
         self.landmark_detector = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
+        
+
 
         self.known_embeddings = []
         self.known_labels = []
         self.blink_counts = []
 
         self.face_detector = dlib.get_frontal_face_detector()
+
+        # self.load_face_embeddings(['bohyun.npy'])
+        self.load_all_embeddings()
 
         self.emotion_model = load_model('emotion_model.hdf5')
         self.emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
@@ -36,6 +43,8 @@ class Supervision(QWidget):
         self.image_label.resize(640, 480)
 
         self.main_menu_button = QPushButton("Main Menu", self)
+        self.main_menu_button.clicked.connect(self.go_to_main_menu)
+
         # Connect the main menu button to an appropriate slot...
 
         layout = QVBoxLayout()
@@ -54,15 +63,27 @@ class Supervision(QWidget):
         self.known_embeddings.append(embedding)
         self.known_labels.append(label)
         self.blink_counts.append(0)
+        
+        
+    def load_all_embeddings(self):
+        npy_files = glob.glob("faces/*.npy")
+        self.load_face_embeddings(npy_files)
 
-    def load_face_embeddings(self, images):
-        for image in images:
-            person_image = cv2.imread(image)
-            person_dlib_frame = cv2.cvtColor(person_image, cv2.COLOR_BGR2RGB)
-            person_faces = self.face_detector(person_dlib_frame)
-            person_landmarks = self.landmark_detector(person_dlib_frame, person_faces[0])
-            person_embedding = self.face_recognition_model.compute_face_descriptor(person_dlib_frame, person_landmarks)
-            label = image.split('0')[0]
+    # def load_face_embeddings(self, images):
+    #     for image in images:
+    #         person_image = cv2.imread(image)
+    #         person_dlib_frame = cv2.cvtColor(person_image, cv2.COLOR_BGR2RGB)
+    #         person_faces = self.face_detector(person_dlib_frame)
+    #         person_landmarks = self.landmark_detector(person_dlib_frame, person_faces[0])
+    #         person_embedding = self.face_recognition_model.compute_face_descriptor(person_dlib_frame, person_landmarks)
+    #         label = image.split('0')[0]
+    #         self.add_known_face_embedding(person_embedding, label)
+    
+    
+    def load_face_embeddings(self, npy_files):
+        for npy_file in npy_files:
+            person_embedding = np.load(npy_file)
+            label = npy_file.split('0')[0]
             self.add_known_face_embedding(person_embedding, label)
 
     @staticmethod
@@ -162,7 +183,7 @@ class Supervision(QWidget):
         self.show()
 
 
-app = QApplication([])
-ex = Supervision()
-ex.run()
-app.exec_()
+# app = QApplication([])
+# ex = Supervision()
+# ex.run()
+# app.exec_()

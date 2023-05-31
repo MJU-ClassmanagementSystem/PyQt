@@ -14,8 +14,13 @@ class VideoThread(QThread):
         self.timer.timeout.connect(self.capture_frame)
         self.timer.start(1000/30)  # Capture at 30 fps
 
+    def stop(self):
+        self.is_running = False  # Use a flag to indicate the thread should stop running
+
     def run(self):
-        self.exec_()
+        self.is_running = True
+        while self.is_running:
+            self.exec_()
 
     def capture_frame(self):
         ret, cv_img = self.cap.read()

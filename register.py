@@ -46,6 +46,11 @@ class Register(QWidget):
     def go_to_main_menu(self):
         self.close()
         self.main_menu.show()
+        
+    def closeEvent(self, event):
+        self.th.stop()  # Assume that you have a method to stop the thread in your VideoThread class
+        event.accept()  # Let the window close
+
 
     def register_face(self):
         ret, frame = self.th.cap.read()
@@ -60,9 +65,16 @@ class Register(QWidget):
 
                 if label:
                     np.save(label + ".npy", embedding)
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Information)
+                    msg.setText("Success")
+                    msg.setInformativeText('You have been registered.')
+                    msg.setWindowTitle("Success")
+                    msg.exec_()
+
                 else:
                     msg = QMessageBox()
-                    msg.setIcon(QMessageBox.Warning)
+                    msg.setIcon(QMessageBox.Critical)
                     msg.setText("Error")
                     msg.setInformativeText('Please enter a name.')
                     msg.setWindowTitle("Error")
