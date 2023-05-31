@@ -8,6 +8,7 @@ import dlib
 import numpy as np
 import tensorflow as tf
 from keras.models import load_model
+from student import Student
 from video_thread import VideoThread
 
 
@@ -22,6 +23,7 @@ class Supervision(QWidget):
 
 
         self.known_embeddings = []
+        self.students = {}
         self.known_labels = []
         self.blink_counts = []
 
@@ -88,6 +90,7 @@ class Supervision(QWidget):
         for file in npy_files:
             person_embedding = np.load(os.path.join(faces_dir, file))
             label = file.replace(".npy", "")
+            self.students[label] = Student(label)
             self.add_known_face_embedding(person_embedding, label)
 
     @staticmethod
@@ -151,6 +154,7 @@ class Supervision(QWidget):
                 label = self.known_labels[min_distance_idx]
             else:
                 label = 'Unknown'
+                return
 
             left, top, right, bottom = face.left(), face.top(), face.right(), face.bottom()
             cv2.rectangle(cv_img, (left, top), (right, bottom), (0, 255, 0), 2)
@@ -168,6 +172,8 @@ class Supervision(QWidget):
                 max_index = np.argmax(predictions[0])
                 emotion = self.emotion_labels[max_index]
                 emotions = {k: v for k, v in zip(self.emotion_labels, predictions[0])}
+                self.students[label].update_emotions(emotions)
+                print(self.students[label].display_info())
 
                 cv2.putText(cv_img, emotion, (left, top - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
 
