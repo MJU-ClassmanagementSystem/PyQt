@@ -150,73 +150,75 @@ class MyApp(QWidget):
               face_img = frame[top:bottom, left:right]
 
               # 감정 분석을 위해 이미지를 흑백으로 변환
-              gray_face_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY)
+              if face_img.size > 0:
 
-              # 이미지를 모델에 전달하여 감정 예측
-              resized_img = cv2.resize(
-                  gray_face_img, (64, 64), interpolation=cv2.INTER_AREA
-              )
-              img_array = tf.keras.preprocessing.image.img_to_array(resized_img)
-              img_array = np.expand_dims(img_array, axis=0)
-              img_array /= 255
-              predictions = self.emotion_model.predict(img_array)
-              max_index = np.argmax(predictions[0])
-              emotion = self.emotion_labels[max_index]
-              emotions = {k: v for k, v in zip(self.emotion_labels, predictions[0])}
-              # 감정 결과 출력
-              cv2.putText(
-                  frame,
-                  emotion,
-                  (left, top - 40),
-                  cv2.FONT_HERSHEY_SIMPLEX,
-                  0.9,
-                  (0, 0, 255),
-                  2,
-              )
-              i = 25
-              for e, v in emotions.items():
-                  v = round(v, 2)
+                  gray_face_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY)
+
+                  # 이미지를 모델에 전달하여 감정 예측
+                  resized_img = cv2.resize(
+                      gray_face_img, (64, 64), interpolation=cv2.INTER_AREA
+                  )
+                  img_array = tf.keras.preprocessing.image.img_to_array(resized_img)
+                  img_array = np.expand_dims(img_array, axis=0)
+                  img_array /= 255
+                  predictions = self.emotion_model.predict(img_array)
+                  max_index = np.argmax(predictions[0])
+                  emotion = self.emotion_labels[max_index]
+                  emotions = {k: v for k, v in zip(self.emotion_labels, predictions[0])}
+                  # 감정 결과 출력
                   cv2.putText(
                       frame,
-                      f"{e} {v}",
-                      (left, bottom + i),
+                      emotion,
+                      (left, top - 40),
                       cv2.FONT_HERSHEY_SIMPLEX,
-                      0.5,
+                      0.9,
                       (0, 0, 255),
-                      1,
+                      2,
                   )
-                  i += 25
-              left_eye_landmarks = landmarks.parts()[36:42]
-              right_eye_landmarks = landmarks.parts()[42:48]
+                  i = 25
+                  for e, v in emotions.items():
+                      v = round(v, 2)
+                      cv2.putText(
+                          frame,
+                          f"{e} {v}",
+                          (left, bottom + i),
+                          cv2.FONT_HERSHEY_SIMPLEX,
+                          0.5,
+                          (0, 0, 255),
+                          1,
+                      )
+                      i += 25
+                  left_eye_landmarks = landmarks.parts()[36:42]
+                  right_eye_landmarks = landmarks.parts()[42:48]
 
-              left_eye_aspect_ratio = self.calculate_eye_aspect_ratio(left_eye_landmarks)
-              right_eye_aspect_ratio = self.calculate_eye_aspect_ratio(
-                  right_eye_landmarks
-              )
-              eye_aspect_ratio = (left_eye_aspect_ratio + right_eye_aspect_ratio) / 2
+                  left_eye_aspect_ratio = self.calculate_eye_aspect_ratio(left_eye_landmarks)
+                  right_eye_aspect_ratio = self.calculate_eye_aspect_ratio(
+                      right_eye_landmarks
+                  )
+                  eye_aspect_ratio = (left_eye_aspect_ratio + right_eye_aspect_ratio) / 2
 
-              if eye_aspect_ratio < 0.25:
-                  self.blink_counts[min_distance_idx] += 1
+                  if eye_aspect_ratio < 0.25:
+                      self.blink_counts[min_distance_idx] += 1
 
-              # 눈 깜빡임 횟수 출력
-              cv2.putText(
-                  frame,
-                  f"Blink count: {self.blink_counts[min_distance_idx]}",
-                  (left, bottom),
-                  cv2.FONT_HERSHEY_SIMPLEX,
-                  0.9,
-                  (0, 255, 0),
-                  2,
-              )
+                  # 눈 깜빡임 횟수 출력
+                  cv2.putText(
+                      frame,
+                      f"Blink count: {self.blink_counts[min_distance_idx]}",
+                      (left, bottom),
+                      cv2.FONT_HERSHEY_SIMPLEX,
+                      0.9,
+                      (0, 255, 0),
+                      2,
+                  )
 
-          # OpenCV 형식의 이미지를 Pixmap으로 변환합니다
-          image = QImage(
-              frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888
-          ).rgbSwapped()
-          pixmap = QPixmap.fromImage(image)
+              # OpenCV 형식의 이미지를 Pixmap으로 변환합니다
+              image = QImage(
+                  frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888
+              ).rgbSwapped()
+              pixmap = QPixmap.fromImage(image)
 
-          # Pixmap을 라벨에 표시합니다
-          self.label.setPixmap(pixmap)
+              # Pixmap을 라벨에 표시합니다
+              self.label.setPixmap(pixmap)
 
     def closeEvent(self, event):
         event.accept()
