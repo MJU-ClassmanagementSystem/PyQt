@@ -52,6 +52,7 @@ class Attendance(QWidget):
         self.timer.start(10000)
         
     def go_to_main_menu(self):
+        self.th.stop()
         self.close()
         self.main_menu.show()
 

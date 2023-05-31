@@ -55,6 +55,7 @@ class Supervision(QWidget):
         
         
     def go_to_main_menu(self):
+        self.th.stop()
         self.close()
         self.main_menu.show()
 
