@@ -2,7 +2,7 @@ class Student:
     def __init__(self, student_id):
         self.student_id = student_id
         self.blink = 0
-        self.count = 0
+        self.count = 1
         self.emotions = {
             'Angry': 0,
             'Disgust': 0,
@@ -16,7 +16,9 @@ class Student:
     def update_emotions(self, new_emotions):
         self.count += 1
         for emotion, value in new_emotions.items():
-            self.emotions[emotion] += value
+            self.emotions[emotion] += round(value, 3)
+            
+            
 
     def add_blink(self):
         self.blink += 1
@@ -25,7 +27,7 @@ class Student:
         print(f"Student ID: {self.student_id}")
         print(f"Blinks: {self.blink}")
         print("Emotions:")
-        for emotion, value in get_emotions(self).items():
+        for emotion, value in self.emotions.items():
             print(f"{emotion}: {value}")
     def get_student_id(self):
         return self.student_id
@@ -34,7 +36,13 @@ class Student:
         return self.blink
 
     def get_emotions(self):
-        normalized_emotions = {}
-        for emotion, value, in self.emotions.items():
-            normalized_emotions[emotion] = value / self.count
-        return normalized_emotions
+        return self.emotions
+      
+    def getStudentEmotion(self):
+        return_emotion ={}
+        return_emotion["student_id"] = self.student_id
+        for emotion, value in self.emotions.items():
+            return_emotion[emotion] = value/self.count
+        return return_emotion
+            
+

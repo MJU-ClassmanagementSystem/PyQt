@@ -8,6 +8,8 @@ import numpy as np
 import tensorflow as tf
 from keras.models import load_model
 
+from student import Student
+
 
 class MyApp(QWidget):
     def __init__(self):
@@ -52,6 +54,7 @@ class MyApp(QWidget):
         import numpy as np
         self.known_embeddings = []
         self.known_labels = []
+        self.students = {}
         faces_dir = "faces"
         for filename in os.listdir(faces_dir):
             if filename.endswith(".npy"):
@@ -60,6 +63,7 @@ class MyApp(QWidget):
                 self.known_embeddings.append(embedding)
                 self.known_labels.append(label)
                 self.blink_counts.append(0)
+                self.students[label] = Student(label)
 
         # 감정 분석을 위한 모델 로드
         self.emotion_model = load_model("emotion_model.hdf5")
@@ -127,6 +131,7 @@ class MyApp(QWidget):
                   label = self.known_labels[min_distance_idx]
               else:
                   label = "Unknown"
+                  return
 
               # 얼굴 영역에 라벨 표시
               left, top, right, bottom = (
@@ -165,6 +170,8 @@ class MyApp(QWidget):
                   max_index = np.argmax(predictions[0])
                   emotion = self.emotion_labels[max_index]
                   emotions = {k: v for k, v in zip(self.emotion_labels, predictions[0])}
+                  self.students[label].update_emotions(emotions)
+                  self.students[label].display_info()
                   # 감정 결과 출력
                   cv2.putText(
                       frame,
@@ -221,6 +228,9 @@ class MyApp(QWidget):
               self.label.setPixmap(pixmap)
 
     def closeEvent(self, event):
+        for key, value in self.students.items():
+          for k, v in value.getStudentEmotion().items():
+            print(k, v)
         event.accept()
         self.cap.release()
 
