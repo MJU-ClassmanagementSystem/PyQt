@@ -104,7 +104,7 @@ class Attendance(QWidget):
                         min_distance = distance
                         min_distance_index = i
 
-                if min_distance < 0.6:
+                if min_distance < 0.3:
                     # check_attendance(self.known_labels[min_distance_index], 0)
                     if not self.attended[min_distance_index]:
                         check_attendance(self.known_labels[min_distance_index], 0)
