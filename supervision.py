@@ -43,6 +43,12 @@ class Supervision(QWidget):
         layout.addWidget(self.main_menu_button)
 
         self.setLayout(layout)
+        
+        
+    def go_to_main_menu(self):
+        self.close()
+        self.main_menu.show()
+
 
     def add_known_face_embedding(self, embedding, label):
         self.known_embeddings.append(embedding)
@@ -90,6 +96,31 @@ class Supervision(QWidget):
 
             min_distance_idx = np.argmin(distances)
             min_distance = distances[min_distance_idx]
+            
+            # This part includes blink detection.
+            gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+
+            gray_landmarks = self.landmark_detector(gray, face)
+
+            # Indices for eye landmarks.
+            left_eye_landmarks = [gray_landmarks.part(i) for i in range(36, 42)]
+            right_eye_landmarks = [gray_landmarks.part(i) for i in range(42, 48)]
+
+            # Calculate eye aspect ratios.
+            left_eye_aspect_ratio = self.calculate_eye_aspect_ratio(left_eye_landmarks)
+            right_eye_aspect_ratio = self.calculate_eye_aspect_ratio(right_eye_landmarks)
+
+            # Check for blinks.
+            if left_eye_aspect_ratio < 0.3 and right_eye_aspect_ratio < 0.3:
+                self.blink_counts[min_distance_idx] += 1
+
+            # Draw eye regions.
+            for point in left_eye_landmarks:
+                cv2.circle(cv_img, (point.x, point.y), 1, (0, 0, 255), -1)
+            for point in right_eye_landmarks:
+                cv2.circle(cv_img, (point.x, point.y), 1, (0, 0, 255), -1)
+
+            cv2.putText(cv_img, f"Blinks: {self.blink_counts[min_distance_idx]}", (face.left(), face.top() - 60), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
             if min_distance <= 0.4:
                 label = self.known_labels[min_distance_idx]
