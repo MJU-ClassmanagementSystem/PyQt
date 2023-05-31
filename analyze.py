@@ -7,8 +7,21 @@ import dlib
 import numpy as np
 import tensorflow as tf
 from keras.models import load_model
+import mysql.connector as mc
+from datetime import datetime
+
 
 from student import Student
+
+def connect_to_mysql():
+    mydb = mc.connect(
+        host="34.22.65.53",
+        user="root",
+        password="cms",
+        database="cms"
+    )
+    return mydb
+
 
 
 class MyApp(QWidget):
@@ -206,6 +219,7 @@ class MyApp(QWidget):
 
                   if eye_aspect_ratio < 0.25:
                       self.blink_counts[min_distance_idx] += 1
+                      self.students[label].add_blink()
 
                   # 눈 깜빡임 횟수 출력
                   cv2.putText(
@@ -228,9 +242,30 @@ class MyApp(QWidget):
               self.label.setPixmap(pixmap)
 
     def closeEvent(self, event):
+      
+        mydb = connect_to_mysql()   
+        mycursor = mydb.cursor()
+
+        # id와 password로 인증 확인
+        current_time = datetime.now()
+        query = "INSERT INTO emotion (angry, disgust, fear, happy, neutral, sad, surprise, student_id, date) VALUES (%s,%s, %s, %s, %s, %s, %s, %s, %s)"
+        
+        
         for key, value in self.students.items():
-          for k, v in value.getStudentEmotion().items():
-            print(k, v)
+            values = list(value.getStudentEmotion().values())
+            values.append('1')
+            values.append(current_time)
+            mycursor.execute(query, tuple(values))
+            
+          # print(f"blink: {value.get_blink()}")
+          # for k, v in value.getStudentEmotion().items():
+          #   print(k, v)
+            
+        mydb.commit()
+        # 연결 종료
+        mycursor.close()
+        mydb.close()
+            
         event.accept()
         self.cap.release()
 
