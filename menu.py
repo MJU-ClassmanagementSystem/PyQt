@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QMessageBox, QLabel
-from analyze import MyApp
+from analyze import Analyze
 from register import Register
 from attendance import Attendance
 
@@ -45,7 +45,7 @@ class MainMenu(QWidget):
         
     def open_analyze(self):
         # self.hide()
-        self.analyze = MyApp()
+        self.analyze = Analyze(self.user_id)
         self.analyze.show()
 
     def closeEvent(self, event):

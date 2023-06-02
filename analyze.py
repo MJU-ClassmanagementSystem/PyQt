@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout,QPushButton,QHBoxLayout, QMessageBox
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer
 import cv2
@@ -9,9 +9,11 @@ import tensorflow as tf
 from keras.models import load_model
 import mysql.connector as mc
 from datetime import datetime
-
-
+import os
+import numpy as np
 from student import Student
+
+CLASS_DURATION = 2
 
 def connect_to_mysql():
     mydb = mc.connect(
@@ -24,12 +26,13 @@ def connect_to_mysql():
 
 
 
-class MyApp(QWidget):
-    def __init__(self):
+class Analyze(QWidget):
+    def __init__(self,teacher_id):
         super().__init__()
+        self.teacher_id = teacher_id
 
-        # 카메라 객체를 설정합니다
-        self.cap = cv2.VideoCapture(0)
+        # 카메라 객체를 초기화합니다.
+        self.cap = None
 
         # Load models and initialize variables
         self.init_models_and_vars()
@@ -38,14 +41,31 @@ class MyApp(QWidget):
         self.label = QLabel(self)
         vbox = QVBoxLayout()
         vbox.addWidget(self.label)
+        
+        # 버튼들을 생성합니다
+        self.button_subjects = ["국어", "수학", "사회", "과학", "영어", "쉬는시간"]
+        self.buttons = [QPushButton(subject, self) for subject in self.button_subjects]
+
+        # 버튼들을 가로로 정렬합니다
+        hbox_buttons = QHBoxLayout()
+        for button in self.buttons:
+            # if button.text() == "국어":
+            #     button.clicked.connect(self.start_timer)
+            button.clicked.connect(self.start_timer)
+            hbox_buttons.addWidget(button)
+
+        # QVBoxLayout에 버튼들을 추가합니다
+        vbox.addLayout(hbox_buttons)
 
         # 타이머를 설정합니다
         self.timer = QTimer()
         self.timer.timeout.connect(self.viewCam)
-        self.timer.start(10)
 
         self.setLayout(vbox)
         self.setWindowTitle("Face Recognition and Emotion Analysis with PyQt")
+        
+        self.resize(800,600)
+
 
     def init_models_and_vars(self):
         # 얼굴 인식 모델 로드
@@ -63,8 +83,6 @@ class MyApp(QWidget):
         self.face_detector = dlib.get_frontal_face_detector()
 
         # Load known face embeddings from .npy files in 'faces' directory
-        import os
-        import numpy as np
         self.known_embeddings = []
         self.known_labels = []
         self.students = {}
@@ -89,6 +107,31 @@ class MyApp(QWidget):
             "Surprise",
             "Neutral",
         ]
+
+
+    def start_timer(self):
+        self.cap = cv2.VideoCapture(0)
+        # 클릭한 버튼의 텍스트를 가져옵니다
+        self.subject_name = self.sender().text()
+    
+        # 타이머를 시작합니다
+        if self.subject_name == "쉬는시간":
+            # 쉬는시간은 1분
+            self.timer.start(20)
+            # QTimer.singleShot(2 * 60 * 1000, self.stop_timer_and_store_data)
+            QTimer.singleShot(1 * 60 * 1000, self.stop_timer_and_store_data)
+            
+            for button in self.buttons:
+                button.setDisabled(True)
+        
+        else:
+            # 수업시간은 2분
+            self.timer.start(20)
+            # QTimer.singleShot(2 * 60 * 1000, self.stop_timer_and_store_data)
+            QTimer.singleShot(CLASS_DURATION * 60 * 1000, self.stop_timer_and_store_data)
+            
+            for button in self.buttons:
+                button.setDisabled(True)
 
 
     def add_known_face_embedding(self, embedding, label):
@@ -238,55 +281,83 @@ class MyApp(QWidget):
               ).rgbSwapped()
               pixmap = QPixmap.fromImage(image)
 
-              # Pixmap을 라벨에 표시합니다
+              # Pixmap을 조정하여 라벨에 표시합니다
+              # scaled_pixmap = pixmap.scaled(640, 480, Qt.KeepAspectRatio)
+              # self.label.setPixmap(scaled_pixmap)
               self.label.setPixmap(pixmap)
 
     def closeEvent(self, event):
-      
-        mydb = connect_to_mysql()   
-        mycursor = mydb.cursor()
-
-        # id와 password로 인증 확인
-        current_time = datetime.now()
-        query = "INSERT INTO emotion (angry, disgust, fear, happy, neutral, sad, surprise, student_id,date) VALUES (%s,%s, %s, %s, %s, %s, %s, %s, %s)"
-        blink_query = "INSERT INTO focus (date, focus_rate, student_id) VALUES (%s,%s, %s)"
-        
-        
-        for key, value in self.students.items():
-            values = list(value.getStudentEmotion().values())
-            values.append(key)
-            values.append(current_time)
-            mycursor.execute(query, tuple(values))
-            if value.get_blink() != 0:
-                blinks = [current_time, self.calculate_score(value.get_blink()), key]
-                mycursor.execute(blink_query, tuple(blinks))
-            
-          # print(f"blink: {value.get_blink()}")
-          # for k, v in value.getStudentEmotion().items():
-          #   print(k, v)
-            
-        mydb.commit()
-        # 연결 종료
-        mycursor.close()
-        mydb.close()
-            
         event.accept()
         self.cap.release()
+        
+        
+    def get_teacher_id(self):
+    # 로그인 시 사용한 user_id를 가져오는 함수를 구현하세요
+    # 예를 들어, 로그인할 때 저장한 user_id를 반환하도록 합니다
+    # 이 예시에서는 임의로 "teacher123"을 반환하도록 설정하였습니다
+        return self.teacher_id
     
-    def calculate_score(self,blink):
-      if blink <= 100:
-          score = 100
-      elif blink <= 200:
-          score = 100 - ((blink - 100) * 0.5)
-      elif blink <= 300:
-          score = 50 - ((blink - 200) * 0.5)   
-      else: 
-          score = 0
-      return score
+    def calculate_concentration_score(self, count, minute):
+        average_blink_per_minute = 15  # 1분에 평균 눈 깜빡임 수
+
+        total_blink = count / minute  # 분당 평균 눈 깜빡임 수 계산
+        concentration_score = max(0, ((average_blink_per_minute - total_blink) / average_blink_per_minute) * 50 + 50)
+        return concentration_score
+    
+    def stop_timer_and_store_data(self):
+        # 타이머를 중지합니다
+        self.timer.stop()
+        
+        if self.cap is not None:
+            self.cap.release()
+            self.cap = None
+
+        # DB에 데이터를 저장합니다
+        mydb = connect_to_mysql()
+        mycursor = mydb.cursor()
+
+        current_time = datetime.now()
+        query = "INSERT INTO emotion (angry, disgust, fear, happy, neutral, sad, surprise, student_id, date, subject_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        blink_query = "INSERT INTO focus (date, focus_rate, student_id, subject_id) VALUES (%s, %s, %s, %s)"
+        subjectid_query = "SELECT id from subject where teacher_id = %s and subject_name = %s"
+        
+        mycursor.execute(subjectid_query, (self.get_teacher_id(), self.subject_name))
+        subjectid = mycursor.fetchone()
+        if subjectid is not None:
+            subjectid = subjectid[0]
+
+        for key, value in self.students.items():
+            if value.get_blink() != 0:
+                emotion_data = list(value.getStudentEmotion().values())
+                emotion_data.append(key)
+                emotion_data.append(current_time)
+                emotion_data.append(subjectid)
+                mycursor.execute(query, tuple(emotion_data))
+                blink_data = [current_time, self.calculate_score(value.get_blink(),CLASS_DURATION), key]
+                blink_data.append(subjectid)
+                mycursor.execute(blink_query, tuple(blink_data))
+
+        mydb.commit()
+        mycursor.close()
+        mydb.close()
+        self.cap.release()
+        
+        # 수업 종료 메시지를 표시합니다
+        msg = QMessageBox()
+        msg.setWindowTitle("알림")
+        msg.setText("수업이 종료되었습니다.")
+        msg.exec_()
+        
+        # 라벨에 표시된 이미지를 비웁니다
+        self.label.clear()
+        
+        for button in self.buttons:
+            button.setDisabled(False)
+        
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    ex = MyApp()
+    ex = Analyze('test')
     ex.show()
     sys.exit(app.exec_())

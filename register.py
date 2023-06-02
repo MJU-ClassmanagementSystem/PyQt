@@ -62,6 +62,7 @@ class Register(QWidget):
 
         self.setLayout(vbox)
         self.setWindowTitle("Register")
+        
 
     def init_models_and_vars(self):
         # 얼굴 인식 모델 로드
