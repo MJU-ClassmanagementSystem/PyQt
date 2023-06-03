@@ -333,7 +333,7 @@ class Analyze(QWidget):
                 emotion_data.append(current_time)
                 emotion_data.append(subjectid)
                 mycursor.execute(query, tuple(emotion_data))
-                blink_data = [current_time, self.calculate_score(value.get_blink(),CLASS_DURATION), key]
+                blink_data = [current_time, self.calculate_concentration_score(value.get_blink(),CLASS_DURATION), key]
                 blink_data.append(subjectid)
                 mycursor.execute(blink_query, tuple(blink_data))
 
