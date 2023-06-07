@@ -63,6 +63,7 @@ class Register(QWidget):
         self.setLayout(vbox)
         self.setWindowTitle("Register")
         
+        
 
     def init_models_and_vars(self):
         # 얼굴 인식 모델 로드
@@ -149,6 +150,8 @@ class Register(QWidget):
         sql = "INSERT INTO student (id, name, parent_id, teacher_id) VALUES (%s, %s, %s, %s)"
         values = (student_id, name, None, self.user_id)
         cursor.execute(sql, values)
+        self.name_edit.clear()
+        self.student_id_edit.clear()
         self.db_connection.commit()
 
     def closeEvent(self, event):

@@ -65,6 +65,7 @@ class Analyze(QWidget):
         self.setWindowTitle("Face Recognition and Emotion Analysis with PyQt")
         
         self.resize(800,600)
+        
 
 
     def init_models_and_vars(self):
@@ -288,7 +289,7 @@ class Analyze(QWidget):
 
     def closeEvent(self, event):
         event.accept()
-        self.cap.release()
+        # self.cap.release()
         
         
     def get_teacher_id(self):
@@ -323,6 +324,9 @@ class Analyze(QWidget):
         
         mycursor.execute(subjectid_query, (self.get_teacher_id(), self.subject_name))
         subjectid = mycursor.fetchone()
+        
+
+        
         if subjectid is not None:
             subjectid = subjectid[0]
 
@@ -330,18 +334,23 @@ class Analyze(QWidget):
             if value.get_blink() != 0:
                 emotion_data = list(value.getStudentEmotion().values())
                 emotion_data.append(key)
-                emotion_data.append(current_time)
+                # emotion_data.append(current_time)
+                emotion_data.append("2023-06-05")
                 emotion_data.append(subjectid)
                 mycursor.execute(query, tuple(emotion_data))
-                blink_data = [current_time, self.calculate_concentration_score(value.get_blink(),CLASS_DURATION), key]
+                # blink_data = [current_time, self.calculate_concentration_score(value.get_blink(),CLASS_DURATION), key]
+                blink_data = ["2023-06-05", self.calculate_concentration_score(value.get_blink(),CLASS_DURATION), key]
                 blink_data.append(subjectid)
                 mycursor.execute(blink_query, tuple(blink_data))
 
         mydb.commit()
         mycursor.close()
         mydb.close()
-        self.cap.release()
-        
+        self.students = {}
+        self.blink_counts = []
+        for i in self.known_labels:
+            self.students[i] = Student(i)
+            self.blink_counts.append(0)
         # 수업 종료 메시지를 표시합니다
         msg = QMessageBox()
         msg.setWindowTitle("알림")
